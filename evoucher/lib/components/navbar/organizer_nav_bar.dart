@@ -1,24 +1,25 @@
+// ignore_for_file: avoid_print
+
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
 import 'package:evoucher/screens/add_item.dart';
 import 'package:evoucher/screens/homescreen.dart';
 import 'package:evoucher/screens/items_list.dart';
-import 'package:evoucher/screens/redeem_voucher.dart';
 import 'package:evoucher/screens/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class CustomBottomNavBar extends StatefulWidget {
+class OrganazinerNavBar extends StatefulWidget {
   final int selectedIndex;
-  CustomBottomNavBar({
+  const OrganazinerNavBar({
     super.key,
     this.selectedIndex = 0,
   });
 
   @override
-  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+  State<OrganazinerNavBar> createState() => _OrganazinerNavBarState();
 }
 
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+class _OrganazinerNavBarState extends State<OrganazinerNavBar> {
   String userRole = "APP_USER";
   List<Widget> navItems = [];
 
@@ -75,16 +76,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const ItemsListScreen()),
-            );
-          },
-        ),
-        InkWell(
-          child: const Icon(Icons.compare_arrows, size: 30),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                  builder: (context) => const RedeemVoucherScreen()),
             );
           },
         ),

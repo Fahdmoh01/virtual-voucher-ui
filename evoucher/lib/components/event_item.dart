@@ -6,6 +6,7 @@ class EventItemCard extends StatelessWidget {
   final String date;
   final String eventImage;
   final String eventCreator;
+  final String eventCreatorEmail;
   final String eventID;
   const EventItemCard({
     super.key,
@@ -13,7 +14,8 @@ class EventItemCard extends StatelessWidget {
     required this.date,
     this.eventImage = 'assets/images/evoucher-logo.png',
     this.eventCreator = 'Fahd Mohammed',
-    this.eventID = 'EV20230819140345716900',
+    this.eventCreatorEmail = 'eventcreator@gmail.com',
+    this.eventID = 'EV20230819140',
   });
 
   @override
@@ -28,6 +30,7 @@ class EventItemCard extends StatelessWidget {
               eventID: eventID,
               eventDate: date,
               eventCreator: eventCreator,
+              eventCreatorEmail: eventCreatorEmail,
             ),
           ),
         );

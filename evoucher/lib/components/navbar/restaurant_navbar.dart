@@ -1,24 +1,24 @@
+// ignore_for_file: avoid_print
+
 import 'package:curved_navigation_bar/curved_navigation_bar.dart';
-import 'package:evoucher/screens/add_item.dart';
 import 'package:evoucher/screens/homescreen.dart';
-import 'package:evoucher/screens/items_list.dart';
 import 'package:evoucher/screens/redeem_voucher.dart';
 import 'package:evoucher/screens/profile.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class CustomBottomNavBar extends StatefulWidget {
+class RestaurantNavBar extends StatefulWidget {
   final int selectedIndex;
-  CustomBottomNavBar({
+  const RestaurantNavBar({
     super.key,
     this.selectedIndex = 0,
   });
 
   @override
-  State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
+  State<RestaurantNavBar> createState() => _RestaurantNavBarState();
 }
 
-class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
+class _RestaurantNavBarState extends State<RestaurantNavBar> {
   String userRole = "APP_USER";
   List<Widget> navItems = [];
 
@@ -57,24 +57,6 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
             Navigator.push(
               context,
               MaterialPageRoute(builder: (context) => const HomeScreen()),
-            );
-          },
-        ),
-        InkWell(
-          child: const Icon(Icons.add, size: 30),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddItemScreen()),
-            );
-          },
-        ),
-        InkWell(
-          child: const Icon(Icons.list, size: 30),
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const ItemsListScreen()),
             );
           },
         ),

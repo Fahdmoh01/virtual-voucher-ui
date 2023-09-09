@@ -1,7 +1,14 @@
+// ignore_for_file: use_build_context_synchronously, non_constant_identifier_names, avoid_print
+
 import 'package:evoucher/components/statComponent.dart';
 // ignore: unused_import
 import 'package:evoucher/consts/colors.dart';
+import 'package:evoucher/network/api_endpoints.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+// import http package and convert dart file
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class StatsScreen extends StatefulWidget {
   const StatsScreen({super.key});
@@ -11,7 +18,83 @@ class StatsScreen extends StatefulWidget {
 }
 
 class _StatsScreenState extends State<StatsScreen> {
+  // amount controller
+  TextEditingController amountController = TextEditingController();
+  // get device width
   double get deviceWidth => MediaQuery.of(context).size.width;
+  // stats data
+  Map<String, dynamic> createdData = {};
+  Map<String, dynamic> broadcastedData = {};
+  Map<String, dynamic> redeemedData = {};
+  // balance
+  double balance = 0;
+
+  // firstname
+  String firstName = "";
+
+  // flags
+  bool isReloading = false;
+
+  // credit user's wallet
+  Future<int> credit_wallet(amount) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+
+    var url = Uri.parse(APIEndpoints.creditWallet);
+    var response = await http.post(url, headers: {
+      // "Content-Type": "application/json",
+      "Authorization": "Token ${token.toString()}",
+    }, body: {
+      "amount": amount.toString(),
+    });
+    if (response.statusCode == 200) {
+      print("Wallet Funded");
+    } else {
+      print('Request failed with status: ${response.statusCode}.');
+    }
+    return 200;
+  }
+
+  // get stats from the api
+  Future<void> getStats(bool reload) async {
+    if (reload == true) {
+      setState(() {
+        isReloading = true;
+      });
+    }
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String? token = prefs.getString('token');
+    final String? fullname = prefs.getString('fullname');
+    List<String> nameParts = fullname!.split(" ");
+    firstName = nameParts[0];
+
+    var url = Uri.parse(APIEndpoints.stats);
+    var response = await http.get(
+      url,
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Token ${token.toString()}",
+      },
+    );
+
+    if (response.statusCode == 200) {
+      print("Stats Fetched Successfully");
+      var data = jsonDecode(response.body)["stats"];
+      setState(() {
+        createdData = data["created"];
+        broadcastedData = data["broadcasted"];
+        redeemedData = data["redeemed"];
+        balance = data["balance"];
+      });
+      print(createdData);
+      print(broadcastedData);
+      print(redeemedData);
+    } else {
+      print('Request failed with status: ${response.statusCode}.');
+    }
+  }
+
   // show success dialog
   Future<void> _showSuccessDialog() async {
     await showDialog(
@@ -43,22 +126,23 @@ class _StatsScreenState extends State<StatsScreen> {
             title: const Text("Add Funds"),
             content: SizedBox(
               width: deviceWidth * 0.8,
-              child: const Column(
+              child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text("Enter Amount"),
-                  SizedBox(height: 10),
+                  const Text("Enter Amount"),
+                  const SizedBox(height: 10),
                   TextField(
-                    decoration: InputDecoration(
+                    controller: amountController,
+                    decoration: const InputDecoration(
                       border: OutlineInputBorder(),
                       labelText: 'Amount',
                     ),
                   ),
-                  SizedBox(height: 10),
-                  Text("Enter Card Number"),
-                  SizedBox(height: 10),
-                  TextField(
+                  const SizedBox(height: 10),
+                  const Text("Enter Card Number"),
+                  const SizedBox(height: 10),
+                  const TextField(
                     decoration: InputDecoration(
                       border: OutlineInputBorder(),
                       labelText: 'Card Number',
@@ -75,15 +159,32 @@ class _StatsScreenState extends State<StatsScreen> {
                 child: const Text("Cancel"),
               ),
               TextButton(
-                onPressed: () {
-                  Navigator.of(context).pop();
-                  _showSuccessDialog();
+                onPressed: () async {
+                  // credit wallet
+                  var res =
+                      await credit_wallet(double.parse(amountController.text));
+                  if (res == 200) {
+                    print("Wallet Funded");
+                    Navigator.of(context).pop();
+                    _showSuccessDialog();
+                    return;
+                  } else {
+                    print("Wallet Funding Failed");
+                    Navigator.of(context).pop();
+                    return;
+                  }
                 },
                 child: const Text("Add"),
               ),
             ],
           );
         });
+  }
+
+  @override
+  initState() {
+    super.initState();
+    getStats(false);
   }
 
   @override
@@ -101,9 +202,9 @@ class _StatsScreenState extends State<StatsScreen> {
             child: Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(children: [
-                const Text(
-                  "Hi Fahd",
-                  style: TextStyle(
+                Text(
+                  "Hi $firstName",
+                  style: const TextStyle(
                       fontSize: 30,
                       color: Colors.white,
                       fontWeight: FontWeight.bold),
@@ -112,25 +213,28 @@ class _StatsScreenState extends State<StatsScreen> {
                   "Welcome to eVoucher",
                   style: TextStyle(fontSize: 20, color: Colors.white),
                 ),
+                const SizedBox(height: 10),
                 Padding(
-                  padding: const EdgeInsets.only(left: 50, right: 40),
+                  padding: const EdgeInsets.only(left: 50, right: 50),
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      const Text(
-                        "\$ 1000.00",
-                        style: TextStyle(
+                      Text(
+                        "\$ $balance",
+                        style: const TextStyle(
                             fontSize: 30,
                             color: Colors.white,
                             fontWeight: FontWeight.bold),
                       ),
-                      const Spacer(),
+                      // const Spacer(),
                       SizedBox(
                         height: 35,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
                             // backgroundColor:
                             //     const Color.fromARGB(255, 0x32, 0xB7, 0x68),
+                            backgroundColor:
+                                const Color.fromRGBO(255, 255, 255, 1),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -139,7 +243,10 @@ class _StatsScreenState extends State<StatsScreen> {
                             // display an alert dialog with two textinput field to add funds
                             _showDialog();
                           },
-                          child: const Text("+ Add Funds"),
+                          child: const Text(
+                            "+ Add Funds",
+                            style: TextStyle(color: Colors.black),
+                          ),
                         ),
                       )
                     ],
@@ -168,35 +275,49 @@ class _StatsScreenState extends State<StatsScreen> {
                         ),
                         const Spacer(),
                         IconButton(
-                            onPressed: () {},
-                            icon: const Icon(Icons.refresh_sharp)),
+                          onPressed: () {
+                            getStats(true);
+                            // Snackbar
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                margin: EdgeInsets.symmetric(horizontal: 5),
+                                content: Text("Stats Refreshed"),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.refresh_sharp),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 5),
-                    const StatCard(
+                    StatCard(
                       title: "ALL VOUCHERS",
-                      total: '134',
+                      total: createdData["all"].toString(),
                       icon: Icons.public_sharp,
                       fullWidth: true,
                     ),
-                    const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        StatCard(
-                          title: "SILVER",
-                          total: '23',
-                          icon: Icons.accessibility,
-                        ),
-                        StatCard(
-                          title: "GOLD",
-                          total: '32',
-                          icon: Icons.gpp_good_outlined,
-                        ),
-                      ],
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          StatCard(
+                            title: "SILVER",
+                            total: createdData["silver"].toString(),
+                            icon: Icons.accessibility,
+                          ),
+                          StatCard(
+                            title: "GOLD",
+                            total: createdData["gold"].toString(),
+                            icon: Icons.gpp_good_outlined,
+                          ),
+                        ],
+                      ),
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "DIAMOND",
-                      total: '45',
+                      total: createdData["diamond"].toString(),
                       icon: Icons.diamond_outlined,
                       fullWidth: true,
                     ),
@@ -208,27 +329,27 @@ class _StatsScreenState extends State<StatsScreen> {
                         color: Color.fromARGB(255, 0x32, 0xB7, 0x68),
                       ),
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "ALL VOUCHERS",
-                      total: '134',
+                      total: broadcastedData["all"].toString(),
                       icon: Icons.public_sharp,
                       fullWidth: true,
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "SILVER",
-                      total: '134',
+                      total: broadcastedData["silver"].toString(),
                       icon: Icons.accessibility,
                       fullWidth: true,
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "GOLD",
-                      total: '134',
+                      total: broadcastedData["gold"].toString(),
                       icon: Icons.gpp_good_outlined,
                       fullWidth: true,
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "DIAMOND",
-                      total: '134',
+                      total: broadcastedData["diamond"].toString(),
                       icon: Icons.diamond_outlined,
                       fullWidth: true,
                     ),
@@ -240,27 +361,27 @@ class _StatsScreenState extends State<StatsScreen> {
                         color: Color.fromARGB(255, 0x32, 0xB7, 0x68),
                       ),
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "ALL VOUCHERS",
-                      total: '134',
+                      total: redeemedData["all"].toString(),
                       icon: Icons.public_sharp,
                       fullWidth: true,
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "SILVER",
-                      total: '134',
+                      total: redeemedData["silver"].toString(),
                       icon: Icons.accessibility,
                       fullWidth: true,
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "GOLD",
-                      total: '134',
+                      total: redeemedData["gold"].toString(),
                       icon: Icons.gpp_good_outlined,
                       fullWidth: true,
                     ),
-                    const StatCard(
+                    StatCard(
                       title: "DIAMOND",
-                      total: '134',
+                      total: redeemedData["diamond"].toString(),
                       icon: Icons.diamond_outlined,
                       fullWidth: true,
                     ),
